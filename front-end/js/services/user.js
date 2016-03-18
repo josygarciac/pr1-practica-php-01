@@ -50,9 +50,11 @@ angular.module('practicaPHP01.services')
              * - Maneje los siguientes escenarios:
              *  - No existían datos.
              *  - Los datos fueron correctamente eliminados.
-             *  - Los datos
+             *  - Los datos no fueron eliminados correctamente.
              * - En los casos 1 y 2, retorne `true` como valor de esta función.
              * - Para el caso 3, retorne `false`.
+             * - IMPORTANTE: recuerde que PHP crea un cookie y PHP debe eliminarlo, de eso depende el valor del retorno
+             * de la función `logout`.
              */
 
             return result;
