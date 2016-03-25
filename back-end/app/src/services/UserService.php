@@ -9,7 +9,7 @@ namespace App\Services;
 class UserService {
 
     private $storage;
-    private $isDBReady = false;
+    private $isDBReady = true;
 
     /**
      * UserService constructor.
@@ -117,6 +117,71 @@ class UserService {
          * - Si todo lo anterior fue verificado existosamente, cree un nuevo usuario en el sistema y comuníquele a
          * quién consumió el servicio el resultado de la operación en forma de un array similar al del método `login`.
          */
+
+        //Verifico que el email cumpla con las siguientes condiciones: sin espacios, al menos 1 caracter
+        if (strlen(trim($email)) > 0) {
+            //Verifico que tenga el formato de un correo
+            if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                //Verifico que la contraseña cumpla con las siguientes condiciones: sin espacios, al menos 1 caracter
+                if (strlen(trim($password)) > 0) {
+                    /*
+                        Verifico que la verificación de la contraseña cumpla con las siguientes condiciones: 
+                        sin espacios, al menos 1 caracter, igual a la contraseña anterior
+                    */
+                    if (strlen(trim($passwordConfirm)) > 0 && $password == $passwordConfirm) {
+                        //Si tuvo éxito, inicializo query para corrobar que los datos ingresados no existan
+                        $query = "SELECT * FROM usuarios WHERE email = :email LIMIT 1";
+
+                        $params = [":email" => $email]; 
+                        if ($this->isDBReady) {
+                            $result = $this->storage->query($query, $params);
+                            // Si la setencia tiene por lo menos una fila, quiere decir que encontramos a nuestro usuario
+                            if (count($result['data']) > 0) {
+                                // Definimos nuestro mensaje de error
+                                $result["message"] = "The user has already been registered. Try with another one.";
+                                $result["error"] = true;
+                            } else {
+                                //Inicializo query para crear el usuario registrado
+                                $query = "INSERT INTO usuarios VALUES (NULL, ':email', ':password', ':fullName')";
+
+                                $params = [":email" => $email, ":password" => $password, "fullName" => $fullName];
+                                if ($this->isDBReady) {
+                                    $result = $this->storage->query($query, $params);
+                                    // Almacenamos el usuario en la variable `user`
+                                    $user = $result['data'][0];
+
+                                    $result["message"] = "The user has been succesfully registered.";
+
+                                    // Enviamos de vuelta a quien consumió el servicio datos sobre el usuario solicitado
+                                    $result["user"] = [
+                                        "email" => $user["email"],
+                                        "fullName" => $user["full_name"]
+                                    ];
+                                } else {
+                                    $result["message"] = "The user couldn't be registered. ";
+                                    $result["error"] = true;
+                                }
+                            }
+                        } else {
+                            $result["message"] = "Database has not been setup yet.";
+                            $result["error"] = true;
+                        }// buscar usuario
+                    } else {
+                        $result["message"] = "Passwords don't match.";
+                        $result["error"] = true;
+                    }// confirmación password
+                } else {
+                    $result["message"] = "Password is required.";
+                    $result["error"] = true;
+                }//password
+            } else {
+                $result["message"] = "Email is invalid";
+                $result["error"] = true;
+            } //formato email
+        } else {
+            $result["message"] = "Email is required.";
+            $result["error"] = true;
+        } //email
 
         return $result;
     }
